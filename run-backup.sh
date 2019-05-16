@@ -22,8 +22,46 @@ executeBackup(){
     mkdir -p $dbDir
     mkdir -p $filesDir
 
-    backupDatabases
+    #backupDatabases
+    backupFiles
+}
 
+backupFiles(){
+
+    log "Starting backup of files"
+
+    saveFilesPermissions
+    copyFiles
+}
+
+copyFiles(){
+
+    log "Copying files from server to $filesDir"
+
+    if [ $verbose -gt 0 ]; then
+        rsync --info=progress2 --no-inc-recursive -azhe ssh rbie:/home/ceieb059/ $filesDir 2>/dev/null
+    else
+        rsync --quiet --no-inc-recursive -azhe ssh rbie:/home/ceieb059/ $filesDir 2>&1 >/dev/null
+    fi
+
+    log "Files copied successfully from server"
+}
+
+saveFilesPermissions(){
+
+    local permissionsFile=$backupDir/permissions.acl
+
+    log "Saving files permissions to: $permissionsFile"
+
+    local lineCount=$(($(ssh rbie find /home/ceieb059 2>/dev/null | wc -l) * 7))
+
+    if [ $verbose -gt 0 ]; then
+        ssh rbie getfacl --recursive /home/ceieb059 2>/dev/null  | pv --eta --rate --bytes --buffer-size 10m --name "Saving permissions" --size 778295 -l > $permissionsFile
+    else
+        ssh rbie getfacl --recursive /home/ceieb059 2>/dev/null > $permissionsFile
+    fi
+
+    log "Files permissions saved successfully"
 }
 
 backupDatabases(){
