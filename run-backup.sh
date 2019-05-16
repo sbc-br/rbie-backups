@@ -37,20 +37,27 @@ executeBackup(){
 
         backupDatabase
 
+        log ""
+
     done
 }
 
 backupDatabase(){
 
-    log ""
+    if [ $verbose -gt 0 ]; then
+        mysqldump --defaults-extra-file=$dbConfigFile $dbName | pv --eta --rate --bytes --buffer-size 10m --name "Dump progress" --size $dbSize > $dbSqlFile
+    else
+        mysqldump --defaults-extra-file=$dbConfigFile $dbName > $dbSqlFile
+    fi
 
-    mysqldump --defaults-extra-file=$dbConfigFile $dbName | pv --eta --rate --bytes --buffer-size 10m --name "Dump progress" --size $dbSize > $dbSqlFile
-
-    log "Database dumped successfuly to file: $dbZipFile"
-    log ""
+    log "Database dumped successfuly to file: $dbSqlFile"
     log "Compressing database dump..."
 
-    zip -9 -j --quiet - $dbSqlFile | (pv --eta --rate --bytes --buffer-size 10m --name "Compression progress" --size $(stat --printf="%s" $dbSqlFile) > $dbZipFile)
+    if [ $verbose -gt 0 ]; then
+        zip -9 -j --quiet - $dbSqlFile | (pv --eta --rate --bytes --buffer-size 10m --name "Compression progress" --size $(stat --printf="%s" $dbSqlFile) > $dbZipFile)
+    else
+        zip -9 -j --quiet - $dbSqlFile > $dbZipFile
+    fi
 
     log "Database dump compressed successfully to file: $dbZipFile"
     log "Removing uncompressed database dump..."
@@ -58,7 +65,6 @@ backupDatabase(){
     rm $dbSqlFile
 
     log "Done"
-    log ""
 }
 
 db(){
