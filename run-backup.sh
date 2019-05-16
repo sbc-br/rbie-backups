@@ -22,6 +22,12 @@ executeBackup(){
     mkdir -p $dbDir
     mkdir -p $filesDir
 
+    backupDatabases
+
+}
+
+backupDatabases(){
+
     local dbConfigFile
 
     for dbConfigFile in $configDir/*.cnf
@@ -32,17 +38,24 @@ executeBackup(){
         local dbSqlFile="$dbDir/$dbName.sql"
         local dbZipFile="$dbDir/$dbName.zip"
 
-        log "Starting backup for database '$dbName'"
-        log "Estimated size: $(readable $dbSize)"
+        log "Found database '$dbName'"
+        log "Estimated size: $(toHumanSize $dbSize)"
 
-        backupDatabase
+        backupSingleDatabase
 
         log ""
 
     done
 }
 
-backupDatabase(){
+backupSingleDatabase(){
+    dumpDatabase
+    compressDatabase
+}
+
+dumpDatabase(){
+
+    log "Dumping database..."
 
     if [ $verbose -gt 0 ]; then
         mysqldump --defaults-extra-file=$dbConfigFile $dbName | pv --eta --rate --bytes --buffer-size 10m --name "Dump progress" --size $dbSize > $dbSqlFile
@@ -51,6 +64,10 @@ backupDatabase(){
     fi
 
     log "Database dumped successfuly to file: $dbSqlFile"
+}
+
+compressDatabase(){
+
     log "Compressing database dump..."
 
     if [ $verbose -gt 0 ]; then
@@ -60,18 +77,18 @@ backupDatabase(){
     fi
 
     log "Database dump compressed successfully to file: $dbZipFile"
-    log "Removing uncompressed database dump..."
+    log "Removing uncompressed database dump: $dbSqlFile"
 
     rm $dbSqlFile
 
-    log "Done"
+    log "Database dump removed succsessfully"
 }
 
 db(){
     echo $(mysql --defaults-extra-file=$dbConfigFile --skip-column-names <<< $1)
 }
 
-readable(){
+toHumanSize(){
     echo $(echo $1 | awk '
     function human(x) {
         if (x<1000) {return x} else {x/=1024}
