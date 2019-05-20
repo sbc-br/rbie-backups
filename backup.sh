@@ -1,16 +1,26 @@
 #!/bin/bash
 
 start(){
-    executeBackup
-
-    echo "Backup completed in: "
-    echo $duration
-}
-
-executeBackup(){
 
     local SCRIPT=$(readlink -f "$0")
     local SCRIPTPATH=$(dirname "$SCRIPT")
+    local backupsLogFile=$SCRIPTPATH/executions.log
+
+    local startTime=$(date +"%s")
+
+    date -d "@$startTime" +"%d-%m-%Y %H:%M:%S - Backup started" >> $backupsLogFile
+
+    executeBackup
+    #sleep $(shuf -i 5-10 -n 1)
+
+    local endTime=$(date +"%s")
+    local elapsedTime=$((endTime - startTime))
+
+    echo $(date +"%d-%m-%Y %H:%M:%S - ") $(date -u -d "@$elapsedTime" +"Backup completed in %Hh %Mmin %Ssec") >> $backupsLogFile
+    echo "" >> $backupsLogFile
+}
+
+executeBackup(){
 
     local dataDir=$SCRIPTPATH/data
     local configDir=$SCRIPTPATH/config
@@ -53,8 +63,6 @@ copyFiles(){
     else
         rsync --delete --info=progress2 --no-inc-recursive --link-dest=$lastFilesDir/  -azhe ssh rbie:$remoteDir/ $currentFilesDir 2>/dev/null 
     fi
-
-#    local timestamp=$(date +"%d-%m-%Y-%H%M%S")
 
     echo "Files copied successfully from server"
 }
