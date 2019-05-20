@@ -1,0 +1,16 @@
+Options -Indexes
+Options +ExecCGI
+
+DirectoryIndex index.sh
+
+<Files .htaccess>
+Order allow,deny
+Deny from all
+</Files>
+
+<Files log-file-name.txt>
+Order allow,deny
+Deny from all
+</Files>
+
+ErrorDocument 403 /err403to404.sh

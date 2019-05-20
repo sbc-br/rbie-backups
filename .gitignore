@@ -1,4 +1,1 @@
-config
-data
-*.swp
-executions.log
+log-file-name.txt
